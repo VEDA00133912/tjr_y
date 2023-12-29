@@ -1,0 +1,15 @@
+[submodule "assets"]
+	path = assets
+	url = https://codeberg.org/mofusky/taiko-web-assets.git
+[submodule "original"]
+	path = original
+	url = https://codeberg.org/mofusky/taiko-web
+[submodule "patches"]
+	path = patches
+	url = https://codeberg.org/mofusky/taiko-web-patches
+[submodule "live2d-widget"]
+	path = live2d-widget
+	url = https://codeberg.org/mofusky/live2d-widget-japanese
+[submodule "upload"]
+	path = upload
+	url = https://codeberg.org/mofusky/taiko-web-uploader.git
