@@ -1,0 +1,77 @@
+version: "3.9"
+
+services:
+  # letsencrypt
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:latest
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./certs:/etc/nginx/certs
+      - ./vhost:/etc/nginx/vhost.d
+      - ./html:/usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./nginx2-proxy-upload-size.conf:/etc/nginx/conf.d/upload.conf
+  nginx-proxy-acme:
+    image: nginxproxy/acme-companion
+    volumes_from:
+      - nginx-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./acme:/etc/acme.sh
+    environment:
+      # 適宜変更
+      - DEFAULT_EMAIL=skifree@skiff.com
+  # services
+  mongo:
+    image: mongo:latest
+    volumes:
+      - ./mongo:/data/db
+  redis:
+    image: redis:latest
+    volumes:
+      - ./redis:/data
+  taiko:
+    image: taiko-web:latest
+    build:
+      context: work
+    volumes:
+      - ./assets:/app/public/assets:ro
+      # 曲はプロキシから返すので必要ないけど一応
+      - ./songs:/app/public/songs:ro
+    environment:
+      - TAIKO_WEB_MONGO_HOST=mongo
+      - TAIKO_WEB_REDIS_HOST=redis
+  taiko-server:
+    image: taiko-web-server:latest
+    build:
+      context: work/server
+  proxy:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx-cloudflare.conf:/etc/nginx/conf.d/cloudflare.conf:ro
+      - ./nginx-cache.conf:/cache.conf
+      - ./live2d-widget:/live2d-widget:ro
+      - ./songs:/songs
+    environment:
+      # 適宜変更
+      - VIRTUAL_HOST=taiko.yuuk1.tk
+      - LETSENCRYPT_HOST=taiko.yuuk1.tk
+    ports:
+      # デバッグ用
+      - 19999:80
+  uploader:
+    image: taiko-web-uploader:latest
+    build:
+      context: upload
+    volumes:
+      - ./songs:/songs
+    environment:
+      - TAIKO_WEB_MONGO_HOST=mongo
+      - TAIKO_WEB_SONGS_DIR=/songs
+      # 適宜変更
+      - VIRTUAL_HOST=upload.yuuk1.tk
+      - VIRTUAL_PORT=3000
+      - LETSENCRYPT_HOST=upload.yuuk1.tk
